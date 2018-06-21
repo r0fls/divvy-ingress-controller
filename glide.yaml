@@ -1,0 +1,24 @@
+package: github.com/r0fls/divvy-ingress-controller
+import:
+- package: github.com/mitchellh/go-homedir
+- package: github.com/r0fls/divvy
+  subpackages:
+  - pkg/loadbalancer/loadbalancer
+- package: github.com/spf13/cobra
+  version: ~0.0.3
+- package: github.com/spf13/viper
+  version: ~1.0.2
+- package: k8s.io/api
+  subpackages:
+  - batch/v1
+  - batch/v2alpha1
+  - core/v1
+- package: k8s.io/apimachinery
+  subpackages:
+  - pkg/apis/meta/v1
+- package: k8s.io/client-go
+  version: ~7.0.0
+  subpackages:
+  - kubernetes
+  - tools/clientcmd
+  - util/homedir
