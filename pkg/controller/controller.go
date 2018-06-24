@@ -34,12 +34,24 @@ type Change struct {
 	Ingress *v1beta1.Ingress
 }
 
+const (
+	// IngressKey picks a specific "class" for the Ingress.
+	// The controller only processes Ingresses with this annotation either
+	// unset, or set to either the configured value or the empty string.
+	IngressKey = "kubernetes.io/ingress.class"
+)
+
 // Create the initial ingress resources
 func (c *Controller) Create() {
 	// Get the ingresses
 	changes, _ := c.Client.ExtensionsV1beta1().Ingresses("").List(v1.ListOptions{})
 	// Add ingresses with the apt class to syncstate channel
 	for _, ingress := range changes.Items {
+		// Only add this ingress to divvy if the ingress class is divvy
+		class, ok := ing.GetAnnotations()[IngressKey]
+		if !ok || class != "divvy" {
+			return
+		}
 		for _, rule := range ingress.Spec.Rules {
 			//TODO: use path
 			for _, path := range rule.IngressRuleValue.HTTP.Paths {
