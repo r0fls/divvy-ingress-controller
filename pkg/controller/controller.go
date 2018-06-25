@@ -50,22 +50,21 @@ func (c *Controller) Create() {
 	} else {
 		// Add ingresses with the apt class to syncstate channel
 		for _, ingress := range changes.Items {
-			// Only add this ingress to divvy if the ingress class is divvy
 			class, ok := ingress.GetAnnotations()[IngressKey]
-			if !ok || class != "divvy" {
-				return
-			}
-			for _, rule := range ingress.Spec.Rules {
-				//TODO: use path
-				for _, path := range rule.IngressRuleValue.HTTP.Paths {
-					c.Changes <- Change{
-						Type: "ADDED",
-						Object: divvy.Worker{
-							Host:    rule.Host,
-							Address: path.Backend.ServiceName,
-							Port:    path.Backend.ServicePort.IntValue(),
-						},
-						Ingress: &ingress,
+			// Only add this ingress to divvy if the ingress class is divvy
+			if ok && class == "divvy" {
+				for _, rule := range ingress.Spec.Rules {
+					//TODO: use path
+					for _, path := range rule.IngressRuleValue.HTTP.Paths {
+						c.Changes <- Change{
+							Type: "ADDED",
+							Object: divvy.Worker{
+								Host:    rule.Host,
+								Address: path.Backend.ServiceName,
+								Port:    path.Backend.ServicePort.IntValue(),
+							},
+							Ingress: &ingress,
+						}
 					}
 				}
 			}
@@ -84,17 +83,20 @@ func (c *Controller) Watch() {
 		for result := range changes.ResultChan() {
 			// This will be ADDED/DELETED or maybe UPDATED
 			ingress, _ := result.Object.(*v1beta1.Ingress)
-			for _, rule := range ingress.Spec.Rules {
-				for _, path := range rule.IngressRuleValue.HTTP.Paths {
-					//TODO: use path
-					c.Changes <- Change{
-						Type: result.Type,
-						Object: divvy.Worker{
-							Host:    rule.Host,
-							Address: path.Backend.ServiceName,
-							Port:    path.Backend.ServicePort.IntValue(),
-						},
-						Ingress: ingress,
+			class, ok := ingress.GetAnnotations()[IngressKey]
+			if ok && class == "divvy" {
+				for _, rule := range ingress.Spec.Rules {
+					for _, path := range rule.IngressRuleValue.HTTP.Paths {
+						//TODO: use path
+						c.Changes <- Change{
+							Type: result.Type,
+							Object: divvy.Worker{
+								Host:    rule.Host,
+								Address: path.Backend.ServiceName,
+								Port:    path.Backend.ServicePort.IntValue(),
+							},
+							Ingress: ingress,
+						}
 					}
 				}
 			}
