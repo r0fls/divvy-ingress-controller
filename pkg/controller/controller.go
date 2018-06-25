@@ -48,7 +48,7 @@ func (c *Controller) Create() {
 	// Add ingresses with the apt class to syncstate channel
 	for _, ingress := range changes.Items {
 		// Only add this ingress to divvy if the ingress class is divvy
-		class, ok := ing.GetAnnotations()[IngressKey]
+		class, ok := ingress.GetAnnotations()[IngressKey]
 		if !ok || class != "divvy" {
 			return
 		}
