@@ -44,25 +44,29 @@ const (
 // Create the initial ingress resources
 func (c *Controller) Create() {
 	// Get the ingresses
-	changes, _ := c.Client.ExtensionsV1beta1().Ingresses("").List(v1.ListOptions{})
-	// Add ingresses with the apt class to syncstate channel
-	for _, ingress := range changes.Items {
-		// Only add this ingress to divvy if the ingress class is divvy
-		class, ok := ingress.GetAnnotations()[IngressKey]
-		if !ok || class != "divvy" {
-			return
-		}
-		for _, rule := range ingress.Spec.Rules {
-			//TODO: use path
-			for _, path := range rule.IngressRuleValue.HTTP.Paths {
-				c.Changes <- Change{
-					Type: "ADDED",
-					Object: divvy.Worker{
-						Host:    rule.Host,
-						Address: path.Backend.ServiceName,
-						Port:    path.Backend.ServicePort.IntValue(),
-					},
-					Ingress: &ingress,
+	changes, err := c.Client.ExtensionsV1beta1().Ingresses("").List(v1.ListOptions{})
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		// Add ingresses with the apt class to syncstate channel
+		for _, ingress := range changes.Items {
+			// Only add this ingress to divvy if the ingress class is divvy
+			class, ok := ingress.GetAnnotations()[IngressKey]
+			if !ok || class != "divvy" {
+				return
+			}
+			for _, rule := range ingress.Spec.Rules {
+				//TODO: use path
+				for _, path := range rule.IngressRuleValue.HTTP.Paths {
+					c.Changes <- Change{
+						Type: "ADDED",
+						Object: divvy.Worker{
+							Host:    rule.Host,
+							Address: path.Backend.ServiceName,
+							Port:    path.Backend.ServicePort.IntValue(),
+						},
+						Ingress: &ingress,
+					}
 				}
 			}
 		}
